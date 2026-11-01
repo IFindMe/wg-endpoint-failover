@@ -105,29 +105,30 @@ written per platform because they are genuinely different; and Android gets the 
 treatment because the platform leaves no alternative.
 
 ```mermaid
+
 flowchart TB
-    subgraph core["core (pure Go, platform-independent)"]
-        CFG[config<br/>parse · validate · defaults]
-        DNS[dns<br/>resolve · cache · TTL]
-        HM[health<br/>probe · evaluate · classify]
-        EM[endpoint manager<br/>policy · state machine · backoff]
-        ST[status<br/>snapshot · json · text]
+    subgraph core["core — pure Go, no platform dependencies"]
+        CFG["config<br/>parse · validate · defaults"]
+        DNS["dns<br/>resolve · cache · TTL"]
+        HM["health<br/>stimulus · evaluate · classify"]
+        EM["endpoint manager<br/>policy · state machine · backoff"]
+        ST["status<br/>snapshot · json · text"]
     end
 
     subgraph iface["adapter interface"]
-        AD[/Controller<br/>Read · SetEndpoint · Watch/]
+        AD["Controller<br/>Read(iface, peer) → PeerState<br/>SetEndpoint(iface, peer, addr)"]
     end
 
-    subgraph adapters["platform adapters"]
-        L[linux<br/>wgctrl-go → netlink]
-        W[windows<br/>wgctrl-go → WireGuardNT]
-        A[android<br/>in-process UAPI]
+    subgraph adapters["platform adapters — policy free"]
+        L["linux<br/>wgctrl-go → netlink<br/>CAP_NET_ADMIN"]
+        W["windows<br/>wgctrl-go → WireGuardNT IOCTL<br/>LocalSystem service"]
+        A["android<br/>in-process UAPI<br/>wgSetConfig patch"]
     end
 
     subgraph hosts["hosts"]
-        D[daemon<br/>systemd / Windows service]
-        CLI[CLI]
-        APP[Android app<br/>patched tunnel lib]
+        D["daemon<br/>systemd unit / Windows service"]
+        CLI["wgefctl<br/>status · validate · candidates"]
+        APP["WireGuard Android app<br/>patched tunnel library"]
     end
 
     EM --> HM
@@ -139,7 +140,7 @@ flowchart TB
     AD --> W
     AD --> A
     D --> EM
-    CLI --> ST
+    CLI -.-> ST
     APP --> EM
 ```
 
@@ -231,7 +232,9 @@ Directories are created when they contain something. No placeholder packages.
 ## 8. Request flow for one check cycle
 
 ```mermaid
+
 sequenceDiagram
+    autonumber
     participant T as ticker
     participant E as endpoint manager
     participant H as health
@@ -240,22 +243,43 @@ sequenceDiagram
     participant W as WireGuard
 
     T->>E: check interval elapsed
+
     E->>C: Read(iface, peer)
-    C->>W: get device
-    W-->>C: endpoint, handshake, rx/tx
+    C->>W: WG_CMD_GET_DEVICE
+    W-->>C: endpoint, last_handshake, rx/tx
     C-->>E: PeerState
-    E->>E: reconcile observed vs desired (roaming?)
-    E->>H: evaluate(state, stimulus needed?)
-    H->>W: send probe packet into tunnel
-    H->>C: Read(iface, peer)  (after probe_timeout)
-    C-->>H: PeerState'
-    H-->>E: HEALTHY | FAILURE | INCONCLUSIVE | LOCAL_NETWORK_DOWN
-    alt FAILURE and threshold reached
-        E->>D: resolve next candidate
-        D-->>E: addr:port
-        E->>C: SetEndpoint(iface, peer, addr)
-        C->>W: set endpoint (update-only)
-        E->>H: enter probation
+
+    E->>E: reconcile observed vs desired (roaming)
+
+    alt local network changed recently
+        E-->>T: LOCAL_NETWORK_DOWN — counters reset, no failover counted
+    else interface missing or permission denied
+        E-->>T: LOCAL_ERROR — Halted, no endpoint write
+    else continue
+        E->>H: evaluate(PeerState, stimulus needed?)
+        H->>W: probe packet into tunnel (L3 target, or keepalive)
+        H->>C: Read(iface, peer) after probe_timeout
+        C-->>H: PeerState'
+        H-->>E: HEALTHY | FAILURE | INCONCLUSIVE
+
+        alt HEALTHY (handshake advanced, or rx advanced)
+            E->>E: clear failure counter; confirm probation
+        else INCONCLUSIVE (transport keys still valid)
+            E->>E: record only; do not count toward failure_threshold
+        else FAILURE
+            E->>E: increment failure counter
+            alt counter >= failure_threshold
+                E->>D: resolve next eligible candidate
+                D-->>E: ip:port (or UNRESOLVED)
+                E->>E: apply() — cooldown, per-candidate backoff,<br/>rate limit, generation check
+                E->>C: SetEndpoint(iface, peer, addr)
+                C->>W: set=1 / WG_CMD_SET_DEVICE<br/>public_key + endpoint only (update-only)
+                W-->>C: ok
+                E->>E: enter Probation
+            else counter below threshold
+                E->>E: stay in Suspect
+            end
+        end
     end
 ```
 

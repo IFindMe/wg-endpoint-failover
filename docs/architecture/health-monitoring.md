@@ -361,6 +361,7 @@ This is why `LOCAL_NETWORK_DOWN` is a distinct result and not a failure.
 ## 8. State machine
 
 ```mermaid
+
 stateDiagram-v2
     [*] --> Init
 
@@ -395,6 +396,17 @@ stateDiagram-v2
     Halted --> Restoring: shutdown
 
     Restoring --> [*]: original endpoint restored (or restore skipped)
+
+    note right of Probation
+        A candidate cannot be tested without
+        committing to it, so every new endpoint
+        must earn promotion.
+    end note
+
+    note right of Halted
+        No endpoint writes ever occur from
+        this state, including on the way out.
+    end note
 ```
 
 Diagram source: [`design/diagrams/failover-state-machine.mmd`](../../design/diagrams/failover-state-machine.mmd).

@@ -255,6 +255,7 @@ more than detection speed:
 | `failback_interval` | `300s` |
 | `dns.refresh_interval` | `300s` |
 | `probe.mode` | `auto` (target preferred) |
+| `probe.allow_keepalive` | `false` |
 
 Defaults are compiled per platform, not written into the file, so a user who copies a
 configuration between platforms gets platform-appropriate behaviour.
