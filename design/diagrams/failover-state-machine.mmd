@@ -1,0 +1,49 @@
+%% failover-state-machine.mmd
+%% Failover state machine with all transitions and guards.
+%% Embedded in docs/architecture/health-monitoring.md
+
+stateDiagram-v2
+    [*] --> Init
+
+    Init --> Selecting: config valid, interface present
+    Init --> Halted: config invalid / interface missing / no permission
+
+    Selecting --> Probation: candidate chosen (highest priority, eligible)
+    Selecting --> Backoff: no eligible candidate
+
+    Probation --> Stable: recovery_threshold × HEALTHY
+    Probation --> Switching: FAILURE reached / probation timeout
+    Probation --> Switching: rollback to previous active (failed failback)
+
+    Stable --> Suspect: FAILURE count > 0
+    Suspect --> Stable: HEALTHY before failure_threshold
+    Suspect --> Switching: FAILURE count >= failure_threshold
+
+    Switching --> Probation: cooldown elapsed, next candidate committed
+    Switching --> Backoff: no eligible candidate left
+
+    Stable --> Probation: failback attempt (better candidate eligible)
+    Suspect --> Probation: failback attempt
+
+    Backoff --> Probation: backoff timer fires
+    Backoff --> Probation: local network changed
+
+    Stable --> Restoring: shutdown
+    Suspect --> Restoring: shutdown
+    Probation --> Restoring: shutdown
+    Switching --> Restoring: shutdown
+    Backoff --> Restoring: shutdown
+    Halted --> Restoring: shutdown
+
+    Restoring --> [*]: original endpoint restored (or restore skipped)
+
+    note right of Probation
+        A candidate cannot be tested without
+        committing to it, so every new endpoint
+        must earn promotion.
+    end note
+
+    note right of Halted
+        No endpoint writes ever occur from
+        this state, including on the way out.
+    end note

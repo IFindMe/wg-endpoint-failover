@@ -1,0 +1,68 @@
+name: Feature request
+description: Propose a capability or a change to the design
+labels: ["type/feature", "status/needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Read docs/architecture/decisions.md first. If your proposal contradicts an ADR,
+        say which one and why.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Linux
+        - Windows
+        - Android
+        - Health monitoring
+        - Configuration
+        - Packaging / release
+        - Documentation
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What fails today, for whom, under what conditions?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: |
+        Links to upstream source, documentation, RFCs, or measurements. This project
+        requires evidence for design changes.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: invariants
+    attributes:
+      label: Invariants
+      options:
+        - label: This proposal does not require reading, storing or logging key material.
+          required: true
+        - label: This proposal does not require modifying WireGuard's protocol or cryptography.
+          required: true
+        - label: This proposal does not require forking an upstream WireGuard repository.
+          required: true

@@ -1,0 +1,49 @@
+# Binaries and build output
+/bin/
+/dist/
+/build/
+/out/
+*.exe
+*.msi
+*.deb
+*.rpm
+*.apk
+*.aab
+*.aar
+*.so
+*.dll
+*.dylib
+*.syso
+
+# Go
+/vendor/
+*.test
+*.out
+coverage.*
+
+# Android / Gradle
+.gradle/
+local.properties
+*.iml
+captures/
+
+# Editors and OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Local runtime state and scratch
+*.log
+/tmp/
+scratch/
+
+# Secrets — never commit these
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+.env
+.env.*

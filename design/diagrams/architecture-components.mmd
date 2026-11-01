@@ -1,0 +1,40 @@
+%% architecture-components.mmd
+%% Component architecture: a platform-independent core behind a one-method adapter.
+%% Embedded in docs/architecture/overview.md
+
+flowchart TB
+    subgraph core["core — pure Go, no platform dependencies"]
+        CFG["config<br/>parse · validate · defaults"]
+        DNS["dns<br/>resolve · cache · TTL"]
+        HM["health<br/>stimulus · evaluate · classify"]
+        EM["endpoint manager<br/>policy · state machine · backoff"]
+        ST["status<br/>snapshot · json · text"]
+    end
+
+    subgraph iface["adapter interface"]
+        AD["Controller<br/>Read(iface, peer) → PeerState<br/>SetEndpoint(iface, peer, addr)"]
+    end
+
+    subgraph adapters["platform adapters — policy free"]
+        L["linux<br/>wgctrl-go → netlink<br/>CAP_NET_ADMIN"]
+        W["windows<br/>wgctrl-go → WireGuardNT IOCTL<br/>LocalSystem service"]
+        A["android<br/>in-process UAPI<br/>wgSetConfig patch"]
+    end
+
+    subgraph hosts["hosts"]
+        D["daemon<br/>systemd unit / Windows service"]
+        CLI["wgefctl<br/>status · validate · candidates"]
+        APP["WireGuard Android app<br/>patched tunnel library"]
+    end
+
+    EM --> HM
+    EM --> DNS
+    EM --> CFG
+    EM --> ST
+    EM --> AD
+    AD --> L
+    AD --> W
+    AD --> A
+    D --> EM
+    CLI -.-> ST
+    APP --> EM

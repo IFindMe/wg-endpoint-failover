@@ -1,0 +1,9 @@
+{
+  "default": true,
+  "MD010": { "code_blocks": false },
+  "MD013": false,
+  "MD024": { "siblings_only": true },
+  "MD029": { "style": "ordered" },
+  "MD033": { "allowed_elements": ["br", "sub", "sup", "details", "summary"] },
+  "MD041": false
+}

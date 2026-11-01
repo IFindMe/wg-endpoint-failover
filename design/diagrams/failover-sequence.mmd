@@ -1,0 +1,52 @@
+%% failover-sequence.mmd
+%% One health-check cycle, including the commit-probe-observe path on failure.
+%% Embedded in docs/architecture/overview.md
+
+sequenceDiagram
+    autonumber
+    participant T as ticker
+    participant E as endpoint manager
+    participant H as health
+    participant D as dns
+    participant C as Controller
+    participant W as WireGuard
+
+    T->>E: check interval elapsed
+
+    E->>C: Read(iface, peer)
+    C->>W: WG_CMD_GET_DEVICE
+    W-->>C: endpoint, last_handshake, rx/tx
+    C-->>E: PeerState
+
+    E->>E: reconcile observed vs desired (roaming)
+
+    alt local network changed recently
+        E-->>T: LOCAL_NETWORK_DOWN — counters reset, no failover counted
+    else interface missing or permission denied
+        E-->>T: LOCAL_ERROR — Halted, no endpoint write
+    else continue
+        E->>H: evaluate(PeerState, stimulus needed?)
+        H->>W: probe packet into tunnel (L3 target, or keepalive)
+        H->>C: Read(iface, peer) after probe_timeout
+        C-->>H: PeerState'
+        H-->>E: HEALTHY | FAILURE | INCONCLUSIVE
+
+        alt HEALTHY (handshake advanced, or rx advanced)
+            E->>E: clear failure counter; confirm probation
+        else INCONCLUSIVE (transport keys still valid)
+            E->>E: record only; do not count toward failure_threshold
+        else FAILURE
+            E->>E: increment failure counter
+            alt counter >= failure_threshold
+                E->>D: resolve next eligible candidate
+                D-->>E: ip:port (or UNRESOLVED)
+                E->>E: apply() — cooldown, per-candidate backoff,<br/>rate limit, generation check
+                E->>C: SetEndpoint(iface, peer, addr)
+                C->>W: set=1 / WG_CMD_SET_DEVICE<br/>public_key + endpoint only (update-only)
+                W-->>C: ok
+                E->>E: enter Probation
+            else counter below threshold
+                E->>E: stay in Suspect
+            end
+        end
+    end

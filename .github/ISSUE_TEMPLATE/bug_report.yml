@@ -1,0 +1,74 @@
+name: Bug report
+description: Something does not work as documented
+labels: ["type/bug", "status/needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not paste private keys, preshared keys, or `wg showconf` output.
+        Redact endpoints if they identify you.
+
+        Security issues go to SECURITY.md, not here.
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Linux
+        - Windows
+        - Android
+        - Documentation
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: "0.1.0 or commit sha"
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+      placeholder: |
+        1. Companion config (redacted):
+        2. Commands run:
+        3. Observed:
+    validations:
+      required: true
+
+  - type: textarea
+    id: state
+    attributes:
+      label: Endpoint manager state
+      description: Output of `wg-endpoint-failover status` if available.
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Redact keys and endpoints as needed.
+      render: text
+    validations:
+      required: false
