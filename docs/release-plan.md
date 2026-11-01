@@ -200,8 +200,8 @@ Enabled on `main` after the planning-phase push; extended at each milestone as n
 | Restrict force pushes | Yes |
 | Restrict deletion | Yes |
 | Admins bound to these rules (`enforce_admins`) | Yes — no bypass, including for force push and deletion |
-| Private vulnerability reporting | Enabled |
-| Dependabot alerts and security updates | Enabled |
+| Private vulnerability reporting | Enable in Settings → General — the API surface available here does not expose it |
+| Dependabot alerts and security updates | At M1, with the Go module (`.github/dependabot.yml`) |
 | Code scanning (CodeQL) | Enabled when Go code exists (M1) |
 
 `PR title` runs via `pull_request_target` with `permissions: pull-requests: read` only, so it
