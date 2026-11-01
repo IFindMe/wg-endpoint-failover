@@ -188,17 +188,18 @@ Rules:
 
 ## 10. Branch protection and repository settings
 
-Recommended, and to be enabled at milestone 1:
+Enabled on `main` after the planning-phase push; extended at each milestone as new jobs land:
 
 | Setting | Value |
 |---|---|
-| Require pull request before merging | Yes, 1 approval |
-| Require status checks | `Docs`, `PR title`; plus `Go CI` from M1 |
+| Require pull request before merging | Yes, no approval count — single-maintainer repo; add one required approval when a second maintainer exists |
+| Require status checks | `markdownlint`, `links`, `lint`; plus the Go CI jobs from M1 |
 | Require linear history | Yes (squash merge) |
 | Dismiss stale approvals on new commits | Yes |
 | Require signed commits | No — would block contributors for no security gain here |
 | Restrict force pushes | Yes |
 | Restrict deletion | Yes |
+| Admins bound to these rules (`enforce_admins`) | Yes — no bypass, including for force push and deletion |
 | Private vulnerability reporting | Enabled |
 | Dependabot alerts and security updates | Enabled |
 | Code scanning (CodeQL) | Enabled when Go code exists (M1) |
