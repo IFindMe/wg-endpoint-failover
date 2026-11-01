@@ -1,0 +1,52 @@
+name: Docs
+
+# Implementable today: this repository contains documentation only.
+# Platform build workflows are specified in docs/release-plan.md and are added when the
+# corresponding build system exists. Do not add a build workflow that builds nothing.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - "**/*.md"
+      - ".markdownlint.jsonc"
+      - ".github/workflows/docs.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  markdownlint:
+    name: Markdown lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lint Markdown
+        uses: DavidAnson/markdownlint-cli2-action@v19
+        with:
+          globs: |
+            **/*.md
+            !**/node_modules/**
+
+  links:
+    name: Link check
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          # Upstream source links are the evidence base for this project; a broken
+          # evidence link is a documentation defect.
+          args: >-
+            --no-progress
+            --accept 200,206,429
+            --max-retries 2
+            --exclude-path design/diagrams
+            "./**/*.md"
+          fail: true
